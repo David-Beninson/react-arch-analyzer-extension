@@ -1,0 +1,67 @@
+{
+  "name": "react-arch-analyzer-extension",
+  "displayName": "React Architecture Analyzer",
+  "publisher": "mrjimmyy",
+  "description": "Analyzes React component structure and props flow",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:react-arch-analyzer-view",
+    "onCommand:react-arch-analyzer.scanWorkspace",
+    "onCommand:react-arch-analyzer.openGraph"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "react-arch-analyzer-sidebar",
+          "title": "React Architecture",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "react-arch-analyzer-sidebar": [
+        {
+          "type": "webview",
+          "id": "react-arch-analyzer-view",
+          "name": "Actions & History"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "react-arch-analyzer.scanWorkspace",
+        "title": "React Arch: Scan Workspace and Upload"
+      },
+      {
+        "command": "react-arch-analyzer.openGraph",
+        "title": "React Arch: Open Architecture Graph"
+      }
+    ],
+    "configuration": {
+      "title": "React Architecture Analyzer",
+      "properties": {
+        "react-arch-analyzer.backendUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8001",
+          "description": "The URL of the React Architecture Analyzer backend API."
+        },
+        "react-arch-analyzer.frontendUrl": {
+          "type": "string",
+          "default": "http://localhost:5173",
+          "description": "The URL of the React Architecture Analyzer frontend dashboard."
+        }
+      }
+    }
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.75.0"
+  }
+}

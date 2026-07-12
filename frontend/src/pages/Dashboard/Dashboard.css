@@ -1,0 +1,82 @@
+.noProjectContainer {
+    padding: 40px;
+    text-align: center;
+    font-family: var(--font-sans);
+}
+
+.savedProjectsContainer {
+    margin: 24px auto;
+    max-width: 320px;
+    text-align: left;
+}
+
+.savedProjectsLabel {
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.savedProjectsList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.savedProjectLink {
+    display: block;
+    padding: 10px 14px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    color: var(--text-heading);
+    text-decoration: none;
+    font-weight: 500;
+    text-align: center;
+    transition: background var(--transition-speed);
+}
+
+.savedProjectLink:hover {
+    background: var(--bg-color) !important;
+}
+
+.noProjectText {
+    margin-top: 24px;
+    color: var(--text-muted);
+}
+
+.createProjectLink {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 8px 16px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    font-weight: 500;
+    transition: background var(--transition-speed);
+}
+
+.createProjectLink:hover {
+    background: var(--primary-hover);
+}
+
+.searchBarInput {
+    padding: 6px 12px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    outline: none;
+}
+
+.searchBarInput:focus {
+    border-color: var(--primary-color);
+}
+
+.dashboard-container {
+    width: 100%;
+    height: 70vh;
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+}

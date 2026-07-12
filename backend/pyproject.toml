@@ -1,0 +1,11 @@
+[project]
+name = "react-arch-analyzer-backend"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "beanie",
+    "motor",
+    "pydantic-settings"
+]

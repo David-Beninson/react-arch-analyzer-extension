@@ -1,0 +1,30 @@
+.container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.errorCode {
+    font-size: 96px;
+    font-weight: 900;
+    color: var(--primary-color);
+    margin: 0 0 10px 0;
+    line-height: 1;
+}
+
+.homeBtn {
+    display: inline-block;
+    margin-top: 24px;
+    padding: 10px 20px;
+    background: var(--primary-color);
+    color: #ffffff;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15px;
+    transition: background var(--transition-speed);
+}
+
+.homeBtn:hover {
+    background: var(--primary-hover);
+}

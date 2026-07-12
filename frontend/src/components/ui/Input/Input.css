@@ -1,0 +1,88 @@
+.inputProjectTitle {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    background: var(--card-bg);
+    color: var(--text-color);
+    box-sizing: border-box;
+    transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+.inputProjectTitle:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.inputArchitecture {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px dashed var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    background: var(--bg-color);
+    color: var(--text-muted);
+    box-sizing: border-box;
+    transition: border-color var(--transition-speed), background var(--transition-speed);
+    cursor: pointer;
+}
+
+.inputArchitecture:hover {
+    border-color: var(--primary-color);
+    background: rgba(79, 70, 229, 0.02);
+}
+
+.inputArchitecture::file-selector-button {
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background var(--transition-speed), border-color var(--transition-speed);
+    margin-right: 12px;
+}
+
+.inputArchitecture::file-selector-button:hover {
+    background-color: var(--bg-color);
+    border-color: var(--border-hover);
+}
+
+
+.inputSubmit {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid var(--primary-color);
+    border-radius: 6px;
+    background: var(--primary-color);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--transition-speed), border-color var(--transition-speed);
+}
+
+.inputSubmit:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+.error {
+    margin-top: 16px;
+    color: var(--error-color);
+    background: var(--error-bg);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+    width: 100%;
+    max-width: 460px;
+    box-sizing: border-box;
+    text-align: center;
+}

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Inverted V connection lines -->
+  <line x1="6" y1="18" x2="12" y2="6" stroke="#64748b" stroke-width="1.5" />
+  <line x1="18" y1="18" x2="12" y2="6" stroke="#64748b" stroke-width="1.5" />
+
+  <!-- Muted bottom nodes (represented as circular components) -->
+  <circle cx="6" cy="18" r="2" fill="#64748b" stroke="none" />
+  <circle cx="18" cy="18" r="2" fill="#64748b" stroke="none" />
+
+  <!-- Prominent top node representing the optimal state initialization point -->
+  <rect x="-3.5" y="-3.5" width="7" height="7" rx="1.5" transform="translate(12, 6) rotate(45)" fill="#00d8ff" stroke="none" />
+</svg>

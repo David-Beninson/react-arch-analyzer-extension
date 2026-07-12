@@ -1,0 +1,27 @@
+.projectTreeForm {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 32px;
+    width: 100%;
+    max-width: 460px;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-sizing: border-box;
+}
+
+.projectTreeForm label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-heading);
+    text-align: left;
+}
+
+.projectTreeForm label br {
+    display: none;
+}

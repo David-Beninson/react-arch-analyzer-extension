@@ -1,0 +1,349 @@
+/* ── Layout & Viewport ── */
+.analysisPage {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-color);
+    overflow: hidden;
+}
+
+.analysisHeader {
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--card-bg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.analysisHeader h1 {
+    margin: 0;
+    font: 600 16px var(--font-sans);
+    color: var(--text-heading);
+}
+
+.analysisGraphWrapper {
+    flex: 1;
+    min-height: 0;
+}
+
+/* ── React Flow ── */
+.react-flow__background {
+    background: var(--bg-color) !important;
+}
+
+.react-flow__attribution {
+    display: none;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+    filter: brightness(0.7);
+}
+
+/* ── Hide handles (keep size for edge routing) ── */
+.nodeHandle {
+    background: transparent !important;
+    border: none !important;
+    width: 10px !important;
+    height: 10px !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    pointer-events: none;
+}
+
+/* ── Node Card & States ── */
+.nodeCard {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 14px;
+    min-width: 140px;
+    max-width: 220px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font: 13px var(--font-sans);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-speed);
+    position: relative;
+}
+
+.nodeCard:hover {
+    border-color: var(--border-hover);
+    box-shadow: var(--shadow-md);
+}
+
+/* המצב של מקור הסטייט */
+.nodeCard.stateSource {
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
+    background: #faf8ff;
+}
+
+.nodeCard.stateSource:hover {
+    border-color: #7c3aed;
+    box-shadow: 0 0 16px rgba(139, 92, 246, 0.3);
+}
+
+/* הדגשות חיפוש */
+.nodeCard.searched-highlight {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 14px rgba(59, 130, 246, 0.4) !important;
+    transform: scale(1.03);
+}
+
+.nodeCard.searched-dimmed {
+    opacity: 0.35;
+    filter: grayscale(0.3);
+}
+
+/* ── Node Header ELEMENTS ── */
+.nodeHeader,
+.nodeLabelWrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+}
+
+.nodeLabel {
+    flex: 1;
+    font-weight: 500;
+    color: var(--text-heading);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* איחוד כפתורים משותפים */
+.nodeBtn,
+.nodeInputSubmitBtn,
+.nodePropRemove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.nodeBtn {
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    background: var(--bg-color);
+    color: var(--text-muted);
+    font-size: 14px;
+    transition: all var(--transition-speed);
+}
+
+.nodeBtn:hover {
+    background: var(--text-heading);
+    color: var(--card-bg);
+    border-color: var(--text-heading);
+}
+
+/* ── Props & Badges ── */
+.drilledSection,
+.stateSourceSection {
+    border-top: 1px dashed var(--border-color);
+    padding-top: 5px;
+    margin-top: 2px;
+}
+
+.nodeProps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.stateBadge {
+    font: 700 9px var(--font-sans);
+    color: #fff;
+    background: var(--secondary-color);
+    padding: 2px 5px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+.nodePropTag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 7px;
+    font: 500 11px var(--font-sans);
+    color: var(--text-color);
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    line-height: 1.4;
+}
+
+/* עיצובי תגיות לפי סוגים */
+.nodePropTag.manual {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1e3a8a;
+}
+
+.nodePropTag.drilled {
+    background: #fffbeb;
+    border: 1px dashed #fcd34d;
+    color: #b45309;
+}
+
+.nodePropTag.stateSource {
+    background: #faf5ff;
+    border: 1px solid #e9d5ff;
+    color: #6b21a8;
+}
+
+.nodePropRemove {
+    width: 14px;
+    height: 14px;
+    border: none;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.nodePropRemove:hover {
+    background: var(--border-color);
+    color: var(--text-heading);
+}
+
+/* ── Inputs & Color Pickers ── */
+.nodeInputWrapper {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    position: relative;
+}
+
+.nodeInput {
+    width: 100%;
+    padding: 5px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font: 12px inherit;
+    outline: none;
+    background: var(--card-bg);
+    color: var(--text-color);
+    box-sizing: border-box;
+}
+
+.nodeInput:focus {
+    border-color: var(--primary-color);
+}
+
+.nodeInput::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.nodeColorPicker {
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    outline: none;
+    appearance: none;
+}
+
+.nodeColorPicker::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.nodeColorPicker::-webkit-color-swatch {
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+}
+
+.nodeInputSubmitBtn {
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--primary-color);
+    border-radius: 4px;
+    background: var(--primary-color);
+    color: #fff;
+    font: bold 11px var(--font-sans);
+    transition: background var(--transition-speed);
+}
+
+.nodeInputSubmitBtn:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+/* ── Suggestions Dropdown ── */
+.propsSuggestionsList {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    /* שינוי ל-100% כדי שיתפוס את כל רוחב הקארד במקום חישוב calc קשיח */
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: var(--shadow-md);
+    max-height: 120px;
+    overflow-y: auto;
+    z-index: 9999;
+    box-sizing: border-box;
+}
+
+.propsSuggestionItem {
+    padding: 6px 10px;
+    font-size: 11px;
+    color: var(--text-color);
+    cursor: pointer;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    transition: all var(--transition-speed);
+}
+
+.propsSuggestionItem:last-child {
+    border-bottom: none;
+}
+
+.propsSuggestionItem:hover {
+    background: var(--bg-color);
+    color: var(--text-heading);
+}
+
+
+/* אנימציית זרימה לאורך הקו של ה-Prop Drilling */
+.edge-drilling-animation {
+    animation: dash 1.5s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes dash {
+    to {
+        stroke-dashoffset: -18;
+    }
+}
+
+/* התגית הצפה שמציגה אזהרה מעל הקשר המוכתם */
+.edge-drilled-badge {
+    position: absolute;
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    font-family: var(--font-sans, sans-serif);
+    pointer-events: all;
+    cursor: help;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    z-index: 10;
+}

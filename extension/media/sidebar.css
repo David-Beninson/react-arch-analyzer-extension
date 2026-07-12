@@ -1,0 +1,70 @@
+body {
+    padding: 15px;
+    font-family: var(--vscode-font-family);
+    color: var(--vscode-foreground);
+    background-color: var(--vscode-sideBar-background);
+}
+button {
+    width: 100%;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    border: none;
+    border-radius: 4px;
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    cursor: pointer;
+    font-weight: 600;
+}
+button:hover {
+    background-color: var(--vscode-button-hoverBackground);
+}
+.refresh-btn {
+    background-color: transparent;
+    border: 1px solid var(--vscode-button-background);
+    color: var(--vscode-button-background);
+}
+.section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin: 20px 0 10px 0;
+    color: var(--vscode-descriptionForeground);
+    border-bottom: 1px solid var(--vscode-sideBar-border);
+    padding-bottom: 5px;
+}
+.project-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    border-radius: 4px;
+    background-color: var(--vscode-sideBar-border);
+    cursor: pointer;
+    font-size: 13px;
+}
+.project-item:hover {
+    background-color: var(--vscode-list-hoverBackground);
+}
+.project-name {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.project-date {
+    font-size: 10px;
+    color: var(--vscode-descriptionForeground);
+}
+.error-text {
+    color: var(--vscode-errorForeground);
+    font-size: 12px;
+    text-align: center;
+    margin-top: 10px;
+}
+.empty-text {
+    color: var(--vscode-descriptionForeground);
+    font-size: 12px;
+    text-align: center;
+    margin-top: 10px;
+}
