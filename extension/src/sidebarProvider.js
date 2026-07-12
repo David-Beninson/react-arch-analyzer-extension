@@ -42,7 +42,7 @@ class ReactArchSidebarProvider {
         if (!this._view) return;
         try {
             const config = vscode.workspace.getConfiguration('react-arch-analyzer');
-            const backendUrl = (config.get('backendUrl') || 'http://127.0.0.1:8001').replace(/\/$/, '');
+            const backendUrl = (config.get('backendUrl') || 'https://react-arch-analyzer-backend.onrender.com').replace(/\/$/, '');
             
             const runs = await request(`${backendUrl}/api/analysis/`);
             this._view.webview.postMessage({ type: 'history', value: runs });

@@ -3,7 +3,7 @@
   "displayName": "React Architecture Analyzer",
   "publisher": "beninsondavid",
   "description": "Analyzes React component structure and props flow",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -50,12 +50,12 @@
       "properties": {
         "react-arch-analyzer.backendUrl": {
           "type": "string",
-          "default": "http://127.0.0.1:8001",
+          "default": "https://react-arch-analyzer-backend.onrender.com",
           "description": "The URL of the React Architecture Analyzer backend API."
         },
         "react-arch-analyzer.frontendUrl": {
           "type": "string",
-          "default": "http://localhost:5173",
+          "default": "https://react-arch-analyzer-frontend.vercel.app",
           "description": "The URL of the React Architecture Analyzer frontend dashboard."
         }
       }

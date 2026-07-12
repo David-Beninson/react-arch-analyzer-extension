@@ -134,7 +134,7 @@ function parseFile(filePath, projectRoot) {
 }
 
 // Scan workspace directory and upload results to backend using DRY api client
-async function scanAndUpload(targetDir, projectName, backendUrl = 'http://127.0.0.1:8001') {
+async function scanAndUpload(targetDir, projectName, backendUrl = 'https://react-arch-analyzer-backend.onrender.com') {
     const absoluteTargetDir = path.resolve(targetDir);
     console.log(`Starting scan of ${absoluteTargetDir}...`);
 

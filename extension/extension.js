@@ -18,7 +18,7 @@ function activate(context) {
         
         // Read backendUrl from VS Code Settings
         const config = vscode.workspace.getConfiguration('react-arch-analyzer');
-        const backendUrl = config.get('backendUrl') || 'http://127.0.0.1:8001';
+        const backendUrl = config.get('backendUrl') || 'https://react-arch-analyzer-backend.onrender.com';
 
         await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
@@ -38,7 +38,7 @@ function activate(context) {
     // 2. Register: Command to Open Graph Webview Panel
     let openGraphDisposable = vscode.commands.registerCommand('react-arch-analyzer.openGraph', function (projectName) {
         const config = vscode.workspace.getConfiguration('react-arch-analyzer');
-        const frontendUrl = (config.get('frontendUrl') || 'http://localhost:5173').replace(/\/$/, '');
+        const frontendUrl = (config.get('frontendUrl') || 'https://react-arch-analyzer-frontend.vercel.app').replace(/\/$/, '');
         
         const panel = vscode.window.createWebviewPanel(
             'reactArchGraph',
