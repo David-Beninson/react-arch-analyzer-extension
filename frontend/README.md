@@ -1,18 +1,52 @@
-# React + Vite
+# React Architecture Analyzer - Frontend Dashboard 💻
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+This is the **Frontend Dashboard** for the React Architecture Analyzer. Built with **React** and **Vite**, it provides a visualization platform for mapping React component flows.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🛠️ Tech Stack
+- **React (v18+)**: Main UI library.
+- **Vite**: Rapid-build frontend bundler.
+- **React Flow (`@xyflow/react`)**: Interactive node-graph engine.
+- **React Router Dom (v6)**: Declarative routing system.
+- **Axios**: HTTP client.
 
-## React Compiler
+---
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+## 📂 Directory Layout (`src`)
 
-Note: This will impact Vite dev & build performances.
+- [components/](file:///Users/mrjimmyy/Projects/vs_code_react_prop_extention/frontend/src/components) - Custom, reusable layout items:
+  - `Common/`: Shell layout (`Layout`).
+  - `ProjectGraph/`:
+    - `index.jsx`: Wraps and builds the nodes and connections configuration.
+    - `NodeCard.jsx`: Reusable custom graph node representing individual React components.
+    - `EdgeCustom.jsx`: Custom connection line showing prop details on hover.
+  - `ui/`: Generic UI inputs, indicators, buttons.
+- [context/](file:///Users/mrjimmyy/Projects/vs_code_react_prop_extention/frontend/src/context) - React global Context wrappers (projects index and tree configurations).
+- [hooks/](file:///Users/mrjimmyy/Projects/vs_code_react_prop_extention/frontend/src/hooks) - React hooks.
+- [pages/](file:///Users/mrjimmyy/Projects/vs_code_react_prop_extention/frontend/src/pages) - Main route views (Home, Dashboard, NewProject, NotFound).
+- [utils/](file:///Users/mrjimmyy/Projects/vs_code_react_prop_extention/frontend/src/utils) - Logic utility helpers, localstorage setups, and node layout calculators.
+- `App.jsx` - Root router settings.
+- `main.jsx` - Entrypoint initialization.
 
-## Expanding the Oxlint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## ⚙️ Standalone Setup & Execution
+
+1. **Install Dependencies:**
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+2. **Configure Environment Variables:**
+   Configure target local/production API address inside `.env`:
+   ```env
+   VITE_API_URL=http://localhost:8001
+   ```
+
+3. **Run Development Server:**
+   ```bash
+   npm run dev
+   ```
+   Access client at `http://localhost:5173/`.
