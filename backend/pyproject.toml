@@ -7,5 +7,6 @@ dependencies = [
     "uvicorn",
     "beanie",
     "motor",
-    "pydantic-settings"
+    "pydantic-settings",
+    "certifi"
 ]
