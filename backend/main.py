@@ -4,6 +4,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import uvicorn
+import certifi
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -43,7 +44,12 @@ settings = Settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     mongodb_uri = settings.mongodb_uri
-    client = AsyncIOMotorClient(f"{mongodb_uri}/react_arch_analyzer")
+    
+    # Use certifi for TLS connection setup to handle SSL handshake in cloud environments
+    client = AsyncIOMotorClient(
+        f"{mongodb_uri}/react_arch_analyzer",
+        tlsCAFile=certifi.where()
+    )
     client.append_metadata = None
     
     await init_beanie(

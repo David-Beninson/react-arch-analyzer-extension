@@ -4,3 +4,4 @@ beanie
 motor
 pydantic-settings
 pydantic>=2.0
+certifi
