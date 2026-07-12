@@ -1,7 +1,7 @@
 {
   "name": "react-arch-analyzer-extension",
   "displayName": "React Architecture Analyzer",
-  "publisher": "mrjimmyy",
+  "publisher": "beninsondavid",
   "description": "Analyzes React component structure and props flow",
   "version": "0.1.0",
   "engines": {

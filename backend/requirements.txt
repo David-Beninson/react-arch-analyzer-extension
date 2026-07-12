@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+beanie
+motor
+pydantic-settings
+pydantic>=2.0
