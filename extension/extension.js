@@ -15,7 +15,7 @@ function activate(context) {
 
         const rootPath = workspaceFolders[0].uri.fsPath;
         const projectName = vscode.workspace.name || 'Unnamed Project';
-        
+
         // Read backendUrl from VS Code Settings
         const config = vscode.workspace.getConfiguration('react-arch-analyzer');
         const backendUrl = config.get('backendUrl') || 'https://react-arch-analyzer-backend.onrender.com';
@@ -39,7 +39,7 @@ function activate(context) {
     let openGraphDisposable = vscode.commands.registerCommand('react-arch-analyzer.openGraph', function (projectName) {
         const config = vscode.workspace.getConfiguration('react-arch-analyzer');
         const frontendUrl = (config.get('frontendUrl') || 'https://react-arch-analyzer-frontend.vercel.app').replace(/\/$/, '');
-        
+
         const panel = vscode.window.createWebviewPanel(
             'reactArchGraph',
             `React Graph: ${projectName || 'View'}`,
@@ -51,7 +51,7 @@ function activate(context) {
         );
 
         // Point the Webview to our React Frontend (running locally or globally)
-        const targetUrl = projectName 
+        const targetUrl = projectName
             ? `${frontendUrl}/dashboard/${encodeURIComponent(projectName)}`
             : `${frontendUrl}/`;
 
@@ -61,7 +61,7 @@ function activate(context) {
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <meta http-equiv="Content-Security-Policy" content="default-src 'none'; frame-src ${frontendUrl} http://localhost:5173 http://127.0.0.1:5173; style-src 'unsafe-inline';">
+                <meta http-equiv="Content-Security-Policy" content="default-src 'none'; frame-src ${frontendUrl} https://react-arch-analyzer-frontend.vercel.app http://localhost:5173 http://127.0.0.1:5173; style-src 'unsafe-inline';">
                 <title>React Architecture Graph</title>
                 <style>
                     html, body, iframe {
@@ -91,7 +91,7 @@ function activate(context) {
     context.subscriptions.push(scanDisposable, openGraphDisposable, sidebarDisposable);
 }
 
-function deactivate() {}
+function deactivate() { }
 
 module.exports = {
     activate,
