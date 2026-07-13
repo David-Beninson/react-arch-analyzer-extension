@@ -16,6 +16,7 @@ def serialize_run(run) -> dict:
         "project_name": run.project_name,
         "root_path": run.root_path,
         "git_commit": run.git_commit,
+        "username": getattr(run, "username", None),
         "created_at": run.created_at.isoformat() if hasattr(run, "created_at") and run.created_at else None
     }
 

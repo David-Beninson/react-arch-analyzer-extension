@@ -26,7 +26,7 @@ window.addEventListener('message', event => {
             const item = document.createElement('div');
             item.className = 'project-item';
             item.addEventListener('click', () => {
-                vscode.postMessage({ type: 'openProject', value: run.project_name });
+                vscode.postMessage({ type: 'openProject', value: { id: run._id, name: run.project_name } });
             });
             
             const dateStr = new Date(run.created_at).toLocaleDateString();

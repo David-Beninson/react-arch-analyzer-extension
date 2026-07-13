@@ -1,7 +1,7 @@
 const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
-const { request } = require('./api');
+const { request, getUsername } = require('./api');
 
 class ReactArchSidebarProvider {
     constructor(extensionUri) {
@@ -44,7 +44,9 @@ class ReactArchSidebarProvider {
             const config = vscode.workspace.getConfiguration('react-arch-analyzer');
             const backendUrl = (config.get('backendUrl') || 'https://react-arch-analyzer-backend.onrender.com').replace(/\/$/, '');
             
-            const runs = await request(`${backendUrl}/api/analysis/`);
+            const username = getUsername();
+
+            const runs = await request(`${backendUrl}/api/analysis/?username=${encodeURIComponent(username)}`);
             this._view.webview.postMessage({ type: 'history', value: runs });
         } catch (err) {
             this._view.webview.postMessage({ type: 'error', value: 'Backend not running or unreachable' });

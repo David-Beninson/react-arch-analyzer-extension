@@ -1,5 +1,6 @@
 const http = require('http');
 const https = require('https');
+const os = require('os');
 
 /**
  * DRY HTTP/HTTPS Request Helper
@@ -53,4 +54,16 @@ function request(urlStr, options = {}) {
     });
 }
 
-module.exports = { request };
+/**
+ * Get the current operating system username
+ * @returns {string} The local OS username
+ */
+function getUsername() {
+    try {
+        return os.userInfo().username;
+    } catch (e) {
+        return process.env.USER || process.env.USERNAME || 'unknown';
+    }
+}
+
+module.exports = { request, getUsername };

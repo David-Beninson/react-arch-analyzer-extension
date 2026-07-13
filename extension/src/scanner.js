@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { request } = require('./api');
+const { request, getUsername } = require('./api');
 
 // Recursively find all React-related source files
 function getFiles(dir, filesList = []) {
@@ -160,12 +160,15 @@ async function scanAndUpload(targetDir, projectName, backendUrl = 'https://react
 
     console.log(`Scan completed. Found ${components.length} components and ${relations.length} relations.`);
 
+    const username = getUsername();
+
     const payload = {
         project_name: projectName,
         root_path: absoluteTargetDir,
         git_commit: null,
         components: components,
-        relations: relations
+        relations: relations,
+        username: username
     };
 
     console.log(`Uploading to backend at ${backendUrl}/api/analysis/...`);
@@ -178,4 +181,4 @@ async function scanAndUpload(targetDir, projectName, backendUrl = 'https://react
     return data;
 }
 
-module.exports = { scanAndUpload, parseFile, getFiles };
+module.exports = { scanAndUpload };

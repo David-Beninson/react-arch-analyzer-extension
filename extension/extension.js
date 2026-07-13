@@ -36,13 +36,26 @@ function activate(context) {
     });
 
     // 2. Register: Command to Open Graph Webview Panel
-    let openGraphDisposable = vscode.commands.registerCommand('react-arch-analyzer.openGraph', function (projectName) {
+    let openGraphDisposable = vscode.commands.registerCommand('react-arch-analyzer.openGraph', function (projectInfo) {
         const config = vscode.workspace.getConfiguration('react-arch-analyzer');
         const frontendUrl = (config.get('frontendUrl') || 'https://react-arch-analyzer-frontend.vercel.app').replace(/\/$/, '');
 
+        let projectId = '';
+        let panelTitle = 'React Graph: View';
+
+        if (projectInfo) {
+            if (typeof projectInfo === 'object') {
+                projectId = projectInfo.id;
+                panelTitle = `React Graph: ${projectInfo.name}`;
+            } else {
+                projectId = projectInfo;
+                panelTitle = `React Graph: ${projectInfo}`;
+            }
+        }
+
         const panel = vscode.window.createWebviewPanel(
             'reactArchGraph',
-            `React Graph: ${projectName || 'View'}`,
+            panelTitle,
             vscode.ViewColumn.One,
             {
                 enableScripts: true,
@@ -51,8 +64,8 @@ function activate(context) {
         );
 
         // Point the Webview to our React Frontend (running locally or globally)
-        const targetUrl = projectName
-            ? `${frontendUrl}/dashboard/${encodeURIComponent(projectName)}`
+        const targetUrl = projectId
+            ? `${frontendUrl}/dashboard/${encodeURIComponent(projectId)}`
             : `${frontendUrl}/`;
 
         panel.webview.html = `

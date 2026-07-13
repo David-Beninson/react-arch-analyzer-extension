@@ -1,3 +1,4 @@
+from typing import Optional
 from bson import ObjectId
 from fastapi import HTTPException
 from models import AnalysisRun, CodeComponent, ComponentRelation
@@ -9,7 +10,8 @@ class AnalysisService:
         run = AnalysisRun(
             project_name=payload.project_name,
             root_path=payload.root_path,
-            git_commit=payload.git_commit
+            git_commit=payload.git_commit,
+            username=payload.username
         )
         await run.insert()
 
@@ -34,7 +36,9 @@ class AnalysisService:
         return {"message": "Analysis run stored successfully", "run_id": str(run.id)}
 
     @staticmethod
-    async def get_all_runs() -> list:
+    async def get_all_runs(username: Optional[str] = None) -> list:
+        if username:
+            return await AnalysisRun.find(AnalysisRun.username == username).to_list()
         return await AnalysisRun.find_all().to_list()
 
     @staticmethod

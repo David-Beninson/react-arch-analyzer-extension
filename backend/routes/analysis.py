@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from schemas.analysis import AnalysisCreateInput
@@ -17,8 +18,8 @@ async def create_analysis(payload: AnalysisCreateInput):
 
 
 @router.get("/")
-async def list_runs():
-    runs = await AnalysisService.get_all_runs()
+async def list_runs(username: Optional[str] = None):
+    runs = await AnalysisService.get_all_runs(username)
     return JSONResponse(content=[serialize_run(r) for r in runs])
 
 
