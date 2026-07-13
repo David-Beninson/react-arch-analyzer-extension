@@ -3,7 +3,7 @@
   "displayName": "React Architecture Analyzer",
   "publisher": "beninsondavid",
   "description": "Analyzes React component structure and props flow",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.75.0"
