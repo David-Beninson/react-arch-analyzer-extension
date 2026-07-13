@@ -8,3 +8,4 @@ pydantic[email]
 certifi
 python-jose[cryptography]
 passlib[bcrypt]
+httpx

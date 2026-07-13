@@ -15,6 +15,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from models import AnalysisRun, CodeComponent, ComponentRelation, User
 from routes.analysis import router as analysis_router
 from routes.auth import router as auth_router
+from routes.github_auth import router as github_auth_router
 
 class Settings(BaseSettings):
     mongodb_password: str = ""
@@ -77,6 +78,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(github_auth_router)
 app.include_router(analysis_router)
 
 @app.get("/", tags=["Root"])

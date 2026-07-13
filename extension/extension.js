@@ -9,131 +9,173 @@ function getBackendUrl() {
 }
 
 /**
- * Prompts user for email and password, sends auth request, and saves JWT in SecretStorage.
+ * Sign the user in via their existing GitHub account in VS Code.
+ * Uses vscode.authentication to obtain a GitHub access token without
+ * any email/password prompt, then exchanges it for our own JWT.
+ *
  * @param {vscode.ExtensionContext} context
- * @param {'login' | 'register'} mode
  */
-async function handleAuth(context, mode) {
-    const email = await vscode.window.showInputBox({ prompt: 'Email', ignoreFocusOut: true });
-    if (!email) return;
-
-    const password = await vscode.window.showInputBox({ prompt: 'Password', password: true, ignoreFocusOut: true });
-    if (!password) return;
-
-    const isLogin = mode === 'login';
-    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-    const successMsg = isLogin ? 'Logged in successfully!' : 'Account created and logged in!';
-    const failPrefix = isLogin ? 'Login failed' : 'Registration failed';
-
+async function handleGitHubSignIn(context) {
     try {
-        const data = await request(`${getBackendUrl()}${endpoint}`, {
+        // Request a GitHub session — VS Code handles the OAuth popup/consent
+        // 'read:user' gives us the profile; 'user:email' gives the primary email
+        const session = await vscode.authentication.getSession(
+            'github',
+            ['read:user', 'user:email'],
+            { createIfNone: true }
+        );
+
+        if (!session) {
+            vscode.window.showWarningMessage('GitHub sign-in was cancelled.');
+            return;
+        }
+
+        // Exchange the GitHub access token for our own backend JWT
+        const data = await request(`${getBackendUrl()}/api/auth/github`, {
             method: 'POST',
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ access_token: session.accessToken }),
         });
+
+        // Store the JWT securely — the webview will pick it up via ?vstoken=
         await context.secrets.store(TOKEN_SECRET_KEY, data.access_token);
-        vscode.window.showInformationMessage(successMsg);
+
+        vscode.window.showInformationMessage(
+            `Signed in as ${session.account.label} — welcome!`
+        );
     } catch (err) {
-        vscode.window.showErrorMessage(`${failPrefix}: ${err.message}`);
+        vscode.window.showErrorMessage(`GitHub sign-in failed: ${err.message}`);
     }
 }
 
 function activate(context) {
     console.log('React Architecture Analyzer extension is now active!');
 
-    // 1. Login command — prompts for credentials and stores the JWT securely
-    const loginDisposable = vscode.commands.registerCommand('react-arch-analyzer.login', () => handleAuth(context, 'login'));
+    // 1. Sign in — uses the GitHub account already connected in VS Code
+    const signInDisposable = vscode.commands.registerCommand(
+        'react-arch-analyzer.signIn',
+        () => handleGitHubSignIn(context)
+    );
 
-    // 2. Register command — creates a new account then stores the JWT
-    const registerDisposable = vscode.commands.registerCommand('react-arch-analyzer.register', () => handleAuth(context, 'register'));
-
-    // 3. Logout command — removes the stored JWT
-    const logoutDisposable = vscode.commands.registerCommand('react-arch-analyzer.logout', async () => {
-        await context.secrets.delete(TOKEN_SECRET_KEY);
-        vscode.window.showInformationMessage('Logged out.');
-    });
-
-    // 4. Scan workspace — requires a stored token
-    const scanDisposable = vscode.commands.registerCommand('react-arch-analyzer.scanWorkspace', async () => {
-        const token = await context.secrets.get(TOKEN_SECRET_KEY);
-        if (!token) {
-            vscode.window.showErrorMessage('Please log in first (Run "React Arch: Login").');
-            return;
+    // 2. Logout — removes the stored JWT
+    const logoutDisposable = vscode.commands.registerCommand(
+        'react-arch-analyzer.logout',
+        async () => {
+            await context.secrets.delete(TOKEN_SECRET_KEY);
+            vscode.window.showInformationMessage('Signed out successfully.');
         }
+    );
 
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (!workspaceFolders) {
-            vscode.window.showErrorMessage('No workspace open to scan.');
-            return;
+    // 3. Scan workspace — requires a stored JWT
+    const scanDisposable = vscode.commands.registerCommand(
+        'react-arch-analyzer.scanWorkspace',
+        async () => {
+            const token = await context.secrets.get(TOKEN_SECRET_KEY);
+            if (!token) {
+                // Auto-sign-in before scanning if not authenticated
+                await handleGitHubSignIn(context);
+            }
+
+            // Re-check after potential sign-in attempt
+            const freshToken = await context.secrets.get(TOKEN_SECRET_KEY);
+            if (!freshToken) return;
+
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders) {
+                vscode.window.showErrorMessage('No workspace open to scan.');
+                return;
+            }
+
+            const rootPath = workspaceFolders[0].uri.fsPath;
+            const projectName = vscode.workspace.name || 'Unnamed Project';
+
+            await vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: 'React Architecture Analyzer',
+                    cancellable: false,
+                },
+                async (progress) => {
+                    progress.report({ message: 'Scanning files...' });
+                    try {
+                        await scanAndUpload(rootPath, projectName, freshToken, getBackendUrl());
+                        vscode.window.showInformationMessage('Scan completed and uploaded!');
+                    } catch (err) {
+                        vscode.window.showErrorMessage(`Scan failed: ${err.message}`);
+                    }
+                }
+            );
         }
+    );
 
-        const rootPath = workspaceFolders[0].uri.fsPath;
-        const projectName = vscode.workspace.name || 'Unnamed Project';
+    // 4. Open graph webview panel
+    const openGraphDisposable = vscode.commands.registerCommand(
+        'react-arch-analyzer.openGraph',
+        async (projectInfo) => {
+            const config = vscode.workspace.getConfiguration('react-arch-analyzer');
+            const frontendUrl = (
+                config.get('frontendUrl') || 'https://react-arch-analyzer-frontend.vercel.app'
+            ).replace(/\/$/, '');
 
-        await vscode.window.withProgress(
-            { location: vscode.ProgressLocation.Notification, title: 'React Architecture Analyzer', cancellable: false },
-            async (progress) => {
-                progress.report({ message: 'Scanning files...' });
-                try {
-                    await scanAndUpload(rootPath, projectName, token, getBackendUrl());
-                    vscode.window.showInformationMessage(`Scan completed and uploaded!`);
-                } catch (err) {
-                    vscode.window.showErrorMessage(`Scan failed: ${err.message}`);
+            let projectId = '';
+            let panelTitle = 'React Graph: View';
+
+            if (projectInfo) {
+                if (typeof projectInfo === 'object') {
+                    projectId = projectInfo.id;
+                    panelTitle = `React Graph: ${projectInfo.name}`;
+                } else {
+                    projectId = projectInfo;
+                    panelTitle = `React Graph: ${projectInfo}`;
                 }
             }
-        );
-    });
 
-    // 5. Open graph webview panel
-    const openGraphDisposable = vscode.commands.registerCommand('react-arch-analyzer.openGraph', async (projectInfo) => {
-        const config = vscode.workspace.getConfiguration('react-arch-analyzer');
-        const frontendUrl = (config.get('frontendUrl') || 'https://react-arch-analyzer-frontend.vercel.app').replace(/\/$/, '');
+            const panel = vscode.window.createWebviewPanel(
+                'reactArchGraph',
+                panelTitle,
+                vscode.ViewColumn.One,
+                { enableScripts: true, retainContextWhenHidden: true }
+            );
 
-        let projectId = '';
-        let panelTitle = 'React Graph: View';
+            const token = await context.secrets.get(TOKEN_SECRET_KEY);
+            const basePath = projectId ? `/dashboard/${encodeURIComponent(projectId)}` : '/';
 
-        if (projectInfo) {
-            if (typeof projectInfo === 'object') {
-                projectId = projectInfo.id;
-                panelTitle = `React Graph: ${projectInfo.name}`;
-            } else {
-                projectId = projectInfo;
-                panelTitle = `React Graph: ${projectInfo}`;
-            }
+            // Append the JWT as a query param so the frontend can authenticate the iframe
+            const targetUrl = token
+                ? `${frontendUrl}${basePath}?vstoken=${encodeURIComponent(token)}`
+                : `${frontendUrl}${basePath}`;
+
+            panel.webview.html = `
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; frame-src ${frontendUrl} https://react-arch-analyzer-frontend.vercel.app http://localhost:5173 http://127.0.0.1:5173; style-src 'unsafe-inline';">
+                    <title>React Architecture Graph</title>
+                    <style>html, body, iframe { margin: 0; padding: 0; width: 100%; height: 100%; border: none; background: transparent; }</style>
+                </head>
+                <body><iframe src="${targetUrl}"></iframe></body>
+                </html>
+            `;
         }
+    );
 
-        const panel = vscode.window.createWebviewPanel(
-            'reactArchGraph', panelTitle, vscode.ViewColumn.One,
-            { enableScripts: true, retainContextWhenHidden: true }
-        );
-
-        const token = await context.secrets.get(TOKEN_SECRET_KEY);
-        const basePath = projectId ? `/dashboard/${encodeURIComponent(projectId)}` : '/';
-        const targetUrl = token
-            ? `${frontendUrl}${basePath}?vstoken=${encodeURIComponent(token)}`
-            : `${frontendUrl}${basePath}`;
-
-        panel.webview.html = `
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <meta http-equiv="Content-Security-Policy" content="default-src 'none'; frame-src ${frontendUrl} https://react-arch-analyzer-frontend.vercel.app http://localhost:5173 http://127.0.0.1:5173; style-src 'unsafe-inline';">
-                <title>React Architecture Graph</title>
-                <style>html, body, iframe { margin: 0; padding: 0; width: 100%; height: 100%; border: none; background: transparent; }</style>
-            </head>
-            <body><iframe src="${targetUrl}"></iframe></body>
-            </html>
-        `;
-    });
-
-    // 6. Sidebar provider — receives SecretStorage for token-based history
+    // 5. Sidebar provider — receives SecretStorage for token-based history
     const sidebarProvider = new ReactArchSidebarProvider(context.extensionUri, context.secrets);
-    const sidebarDisposable = vscode.window.registerWebviewViewProvider('react-arch-analyzer-view', sidebarProvider);
+    const sidebarDisposable = vscode.window.registerWebviewViewProvider(
+        'react-arch-analyzer-view',
+        sidebarProvider
+    );
 
-    context.subscriptions.push(loginDisposable, registerDisposable, logoutDisposable, scanDisposable, openGraphDisposable, sidebarDisposable);
+    context.subscriptions.push(
+        signInDisposable,
+        logoutDisposable,
+        scanDisposable,
+        openGraphDisposable,
+        sidebarDisposable
+    );
 }
 
-function deactivate() { }
+function deactivate() {}
 
 module.exports = { activate, deactivate };
