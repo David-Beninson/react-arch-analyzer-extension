@@ -1,10 +1,11 @@
+import { Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './NotAuthenticated.css';
 
 export default function ProtectedRoute({ children }) {
     const { isAuthenticated } = useAuth();
 
-    if (isAuthenticated) return children;
+    if (isAuthenticated) return children || <Outlet />;
 
     return (
         <div className="not-auth">
