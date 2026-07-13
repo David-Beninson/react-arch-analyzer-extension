@@ -12,8 +12,9 @@ from beanie import init_beanie
 from contextlib import asynccontextmanager
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from models import AnalysisRun, CodeComponent, ComponentRelation
+from models import AnalysisRun, CodeComponent, ComponentRelation, User
 from routes.analysis import router as analysis_router
+from routes.auth import router as auth_router
 
 class Settings(BaseSettings):
     mongodb_password: str = ""
@@ -53,8 +54,8 @@ async def lifespan(app: FastAPI):
     client.append_metadata = None
     
     await init_beanie(
-        database=client.react_arch_analyzer, 
-        document_models=[AnalysisRun, CodeComponent, ComponentRelation]
+        database=client.react_arch_analyzer,
+        document_models=[User, AnalysisRun, CodeComponent, ComponentRelation]
     )
     print("🚀 Beanie ORM initialized successfully!")
     yield 
@@ -75,6 +76,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
 app.include_router(analysis_router)
 
 @app.get("/", tags=["Root"])

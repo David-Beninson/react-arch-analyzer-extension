@@ -4,4 +4,7 @@ beanie
 motor
 pydantic-settings
 pydantic>=2.0
+pydantic[email]
 certifi
+python-jose[cryptography]
+passlib[bcrypt]

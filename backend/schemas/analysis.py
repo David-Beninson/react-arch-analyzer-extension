@@ -23,7 +23,6 @@ class AnalysisCreateInput(BaseModel):
     project_name: str
     root_path: Optional[str] = None
     git_commit: Optional[str] = None
-    username: Optional[str] = None
     components: List[ComponentInput]
     relations: List[RelationInput]
 
@@ -32,7 +31,6 @@ class RunResponse(BaseModel):
     project_name: str
     root_path: Optional[str]
     git_commit: Optional[str]
-    username: Optional[str] = None
     created_at: Optional[str]
 
     class Config:

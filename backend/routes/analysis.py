@@ -1,32 +1,35 @@
-from typing import Optional
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
+
+from models.User import User
 from schemas.analysis import AnalysisCreateInput
 from services.analysis_service import AnalysisService
+from utils.auth import get_current_user
+from utils.serializers import serialize_run, serialize_component, serialize_relation
 
-from utils.serializers import serialize_run, serialize_component, serialize_relation 
+router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 
-router = APIRouter(
-    prefix="/api/analysis",
-    tags=["analysis"]
-)
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_analysis(payload: AnalysisCreateInput):
-    result = await AnalysisService.create_new_analysis(payload)
-    return result
+async def create_analysis(
+    payload: AnalysisCreateInput,
+    current_user: User = Depends(get_current_user),
+):
+    return await AnalysisService.create_new_analysis(payload, current_user)
 
 
 @router.get("/")
-async def list_runs(username: Optional[str] = None):
-    runs = await AnalysisService.get_all_runs(username)
+async def list_runs(current_user: User = Depends(get_current_user)):
+    runs = await AnalysisService.get_all_runs(current_user)
     return JSONResponse(content=[serialize_run(r) for r in runs])
 
 
 @router.get("/{run_id}")
-async def get_run_analysis(run_id: str):
-    data = await AnalysisService.get_analysis_by_id(run_id)
-    
+async def get_run_analysis(
+    run_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    data = await AnalysisService.get_analysis_by_id(run_id, current_user)
     return JSONResponse(content={
         "run": serialize_run(data["run"]),
         "components": [serialize_component(c) for c in data["components"]],

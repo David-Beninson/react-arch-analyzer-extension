@@ -1,12 +1,65 @@
 const vscode = require('vscode');
-const ReactArchSidebarProvider = require('./src/sidebarProvider');
+const { ReactArchSidebarProvider, TOKEN_SECRET_KEY } = require('./src/sidebarProvider');
 const { scanAndUpload } = require('./src/scanner');
+const { request } = require('./src/api');
+
+function getBackendUrl() {
+    const config = vscode.workspace.getConfiguration('react-arch-analyzer');
+    return (config.get('backendUrl') || 'https://react-arch-analyzer-backend.onrender.com').replace(/\/$/, '');
+}
+
+/**
+ * Prompts user for email and password, sends auth request, and saves JWT in SecretStorage.
+ * @param {vscode.ExtensionContext} context
+ * @param {'login' | 'register'} mode
+ */
+async function handleAuth(context, mode) {
+    const email = await vscode.window.showInputBox({ prompt: 'Email', ignoreFocusOut: true });
+    if (!email) return;
+
+    const password = await vscode.window.showInputBox({ prompt: 'Password', password: true, ignoreFocusOut: true });
+    if (!password) return;
+
+    const isLogin = mode === 'login';
+    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+    const successMsg = isLogin ? 'Logged in successfully!' : 'Account created and logged in!';
+    const failPrefix = isLogin ? 'Login failed' : 'Registration failed';
+
+    try {
+        const data = await request(`${getBackendUrl()}${endpoint}`, {
+            method: 'POST',
+            body: JSON.stringify({ email, password }),
+        });
+        await context.secrets.store(TOKEN_SECRET_KEY, data.access_token);
+        vscode.window.showInformationMessage(successMsg);
+    } catch (err) {
+        vscode.window.showErrorMessage(`${failPrefix}: ${err.message}`);
+    }
+}
 
 function activate(context) {
     console.log('React Architecture Analyzer extension is now active!');
 
-    // 1. Register: Command to Scan Workspace
-    let scanDisposable = vscode.commands.registerCommand('react-arch-analyzer.scanWorkspace', async function () {
+    // 1. Login command — prompts for credentials and stores the JWT securely
+    const loginDisposable = vscode.commands.registerCommand('react-arch-analyzer.login', () => handleAuth(context, 'login'));
+
+    // 2. Register command — creates a new account then stores the JWT
+    const registerDisposable = vscode.commands.registerCommand('react-arch-analyzer.register', () => handleAuth(context, 'register'));
+
+    // 3. Logout command — removes the stored JWT
+    const logoutDisposable = vscode.commands.registerCommand('react-arch-analyzer.logout', async () => {
+        await context.secrets.delete(TOKEN_SECRET_KEY);
+        vscode.window.showInformationMessage('Logged out.');
+    });
+
+    // 4. Scan workspace — requires a stored token
+    const scanDisposable = vscode.commands.registerCommand('react-arch-analyzer.scanWorkspace', async () => {
+        const token = await context.secrets.get(TOKEN_SECRET_KEY);
+        if (!token) {
+            vscode.window.showErrorMessage('Please log in first (Run "React Arch: Login").');
+            return;
+        }
+
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) {
             vscode.window.showErrorMessage('No workspace open to scan.');
@@ -16,27 +69,22 @@ function activate(context) {
         const rootPath = workspaceFolders[0].uri.fsPath;
         const projectName = vscode.workspace.name || 'Unnamed Project';
 
-        // Read backendUrl from VS Code Settings
-        const config = vscode.workspace.getConfiguration('react-arch-analyzer');
-        const backendUrl = config.get('backendUrl') || 'https://react-arch-analyzer-backend.onrender.com';
-
-        await vscode.window.withProgress({
-            location: vscode.ProgressLocation.Notification,
-            title: "React Architecture Analyzer",
-            cancellable: false
-        }, async (progress) => {
-            progress.report({ message: "Scanning files..." });
-            try {
-                await scanAndUpload(rootPath, projectName, backendUrl);
-                vscode.window.showInformationMessage(`Scan successfully completed and uploaded to ${backendUrl}!`);
-            } catch (err) {
-                vscode.window.showErrorMessage(`Scan failed: ${err.message}`);
+        await vscode.window.withProgress(
+            { location: vscode.ProgressLocation.Notification, title: 'React Architecture Analyzer', cancellable: false },
+            async (progress) => {
+                progress.report({ message: 'Scanning files...' });
+                try {
+                    await scanAndUpload(rootPath, projectName, token, getBackendUrl());
+                    vscode.window.showInformationMessage(`Scan completed and uploaded!`);
+                } catch (err) {
+                    vscode.window.showErrorMessage(`Scan failed: ${err.message}`);
+                }
             }
-        });
+        );
     });
 
-    // 2. Register: Command to Open Graph Webview Panel
-    let openGraphDisposable = vscode.commands.registerCommand('react-arch-analyzer.openGraph', function (projectInfo) {
+    // 5. Open graph webview panel
+    const openGraphDisposable = vscode.commands.registerCommand('react-arch-analyzer.openGraph', async (projectInfo) => {
         const config = vscode.workspace.getConfiguration('react-arch-analyzer');
         const frontendUrl = (config.get('frontendUrl') || 'https://react-arch-analyzer-frontend.vercel.app').replace(/\/$/, '');
 
@@ -54,19 +102,15 @@ function activate(context) {
         }
 
         const panel = vscode.window.createWebviewPanel(
-            'reactArchGraph',
-            panelTitle,
-            vscode.ViewColumn.One,
-            {
-                enableScripts: true,
-                retainContextWhenHidden: true
-            }
+            'reactArchGraph', panelTitle, vscode.ViewColumn.One,
+            { enableScripts: true, retainContextWhenHidden: true }
         );
 
-        // Point the Webview to our React Frontend (running locally or globally)
-        const targetUrl = projectId
-            ? `${frontendUrl}/dashboard/${encodeURIComponent(projectId)}`
-            : `${frontendUrl}/`;
+        const token = await context.secrets.get(TOKEN_SECRET_KEY);
+        const basePath = projectId ? `/dashboard/${encodeURIComponent(projectId)}` : '/';
+        const targetUrl = token
+            ? `${frontendUrl}${basePath}?vstoken=${encodeURIComponent(token)}`
+            : `${frontendUrl}${basePath}`;
 
         panel.webview.html = `
             <!DOCTYPE html>
@@ -76,37 +120,20 @@ function activate(context) {
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; frame-src ${frontendUrl} https://react-arch-analyzer-frontend.vercel.app http://localhost:5173 http://127.0.0.1:5173; style-src 'unsafe-inline';">
                 <title>React Architecture Graph</title>
-                <style>
-                    html, body, iframe {
-                        margin: 0;
-                        padding: 0;
-                        width: 100%;
-                        height: 100%;
-                        border: none;
-                        background-color: transparent;
-                    }
-                </style>
+                <style>html, body, iframe { margin: 0; padding: 0; width: 100%; height: 100%; border: none; background: transparent; }</style>
             </head>
-            <body>
-                <iframe src="${targetUrl}"></iframe>
-            </body>
+            <body><iframe src="${targetUrl}"></iframe></body>
             </html>
         `;
     });
 
-    // 3. Register: Sidebar Webview Provider
-    const sidebarProvider = new ReactArchSidebarProvider(context.extensionUri);
-    let sidebarDisposable = vscode.window.registerWebviewViewProvider(
-        'react-arch-analyzer-view',
-        sidebarProvider
-    );
+    // 6. Sidebar provider — receives SecretStorage for token-based history
+    const sidebarProvider = new ReactArchSidebarProvider(context.extensionUri, context.secrets);
+    const sidebarDisposable = vscode.window.registerWebviewViewProvider('react-arch-analyzer-view', sidebarProvider);
 
-    context.subscriptions.push(scanDisposable, openGraphDisposable, sidebarDisposable);
+    context.subscriptions.push(loginDisposable, registerDisposable, logoutDisposable, scanDisposable, openGraphDisposable, sidebarDisposable);
 }
 
 function deactivate() { }
 
-module.exports = {
-    activate,
-    deactivate
-}
+module.exports = { activate, deactivate };

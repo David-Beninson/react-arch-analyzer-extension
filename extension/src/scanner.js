@@ -1,22 +1,19 @@
 const fs = require('fs');
 const path = require('path');
-const { request, getUsername } = require('./api');
+const { request } = require('./api');
+
+// Directories to skip during recursive scan
+const IGNORE_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.next', 'public']);
 
 // Recursively find all React-related source files
 function getFiles(dir, filesList = []) {
     if (!fs.existsSync(dir)) return filesList;
-    const files = fs.readdirSync(dir);
-    for (const file of files) {
-        const name = path.join(dir, file);
-        if (fs.statSync(name).isDirectory()) {
-            if (['node_modules', '.git', 'dist', 'build', '.next', 'public'].some(ignore => file.includes(ignore))) {
-                continue;
-            }
-            getFiles(name, filesList);
-        } else {
-            if (/\.(js|jsx|ts|tsx)$/.test(file)) {
-                filesList.push(name);
-            }
+    for (const file of fs.readdirSync(dir)) {
+        const fullPath = path.join(dir, file);
+        if (fs.statSync(fullPath).isDirectory()) {
+            if (!IGNORE_DIRS.has(file)) getFiles(fullPath, filesList);
+        } else if (/\.(js|jsx|ts|tsx)$/.test(file)) {
+            filesList.push(fullPath);
         }
     }
     return filesList;
@@ -28,125 +25,79 @@ function parseFile(filePath, projectRoot) {
     const relativePath = path.relative(projectRoot, filePath);
     const fileName = path.basename(filePath, path.extname(filePath));
 
-    // 1. Detect Component Name
-    let componentName = null;
+    // 1. Detect component name via function or arrow declaration
     const funcMatch = content.match(/(?:export\s+default\s+|export\s+)?function\s+([A-Z]\w*)/);
     const arrowMatch = content.match(/(?:export\s+)?const\s+([A-Z]\w*)\s*=\s*(?:\([^)]*\)|[a-zA-Z0-9_]+)\s*=>/);
 
-    if (funcMatch) {
-        componentName = funcMatch[1];
-    } else if (arrowMatch) {
-        componentName = arrowMatch[1];
-    } else {
-        // Fallback: If filename starts with uppercase letter (e.g. Card.jsx)
-        if (/^[A-Z]/.test(fileName)) {
-            componentName = fileName;
-        }
-    }
-
+    let componentName = funcMatch?.[1] || arrowMatch?.[1];
     if (!componentName) {
-        // Fallback: If it's a JS/JSX entry point rendering JSX elements (like main.jsx), name it after the file
-        if (content.includes('</') || content.includes('/>') || /<[A-Z]/.test(content)) {
+        if (/^[A-Z]/.test(fileName)) componentName = fileName;
+        else if (content.includes('</') || content.includes('/>') || /\<[A-Z]/.test(content))
             componentName = fileName.charAt(0).toUpperCase() + fileName.slice(1);
-        } else {
-            return null; // Not a React component file
-        }
+        else return null; // Not a React component file
     }
 
-    // 2. Detect Hooks (useState, useEffect, custom Hooks)
-    const hooksMatches = content.match(/\buse[A-Z]\w*\b/g) || [];
-    const hooks = [...new Set(hooksMatches)];
+    // 2. Detect hooks (useState, useEffect, custom hooks)
+    const hooks = [...new Set(content.match(/\buse[A-Z]\w*\b/g) || [])];
 
-    // 3. Detect State variables
-    const stateMatches = [...content.matchAll(/const\s+\[\s*(\w+)\s*,\s*\w+\s*\]\s*=\s*useState/g)];
-    const stateVariables = stateMatches.map(m => m[1]);
+    // 3. Detect state variables
+    const stateVariables = [...content.matchAll(/const\s+\[\s*(\w+)\s*,\s*\w+\s*\]\s*=\s*useState/g)]
+        .map(m => m[1]);
 
     // 4. Check if component is exported
-    const isExported = content.includes('export default') || 
-                      content.includes(`export const ${componentName}`) || 
-                      content.includes(`export function ${componentName}`);
+    const isExported =
+        content.includes('export default') ||
+        content.includes(`export const ${componentName}`) ||
+        content.includes(`export function ${componentName}`);
 
-    // 5. Detect child components rendered inside JSX
-    const childTagsMatches = [...content.matchAll(/<([A-Z]\w*)/g)];
-    const childComponents = [...new Set(childTagsMatches.map(m => m[1]))].filter(name => name !== componentName);
+    // 5. Detect child components and the props passed to each
+    const childComponents = [...new Set(
+        [...content.matchAll(/<([A-Z]\w*)/g)].map(m => m[1])
+    )].filter(n => n !== componentName);
 
-    // 6. Inspect props passed to each child component
-    const relations = [];
-    childComponents.forEach(childName => {
-        const tagRegex = new RegExp(`<${childName}\\s+([\\s\\S]*?)(?:\\/>|>)`, 'g');
-        const tagMatches = [...content.matchAll(tagRegex)];
-        
+    const relations = childComponents.map(childName => {
+        const tagMatches = [...content.matchAll(new RegExp(`<${childName}\\s+([\\s\\S]*?)(?:\\/>>|>)`, 'g'))];
+        const seen = new Set();
         const propsPassed = [];
-        tagMatches.forEach(match => {
-            const propsStr = match[1];
-            const propRegex = /(\w+)(?:\s*=\s*(?:\{[^}]+\}|"[^"]*"|'[^']*'))?/g;
-            const propMatches = [...propsStr.matchAll(propRegex)];
-            
-            propMatches.forEach(pMatch => {
+
+        for (const match of tagMatches) {
+            for (const pMatch of match[1].matchAll(/(\w+)(?:\s*=\s*(?:\{[^}]+\}|"[^"]*"|'[^']*'))?/g)) {
                 const propName = pMatch[1];
-                if (propName && !['key', 'ref'].includes(propName)) {
-                    const isCallback = /^on[A-Z]/.test(propName);
-                    let typeGuess = "unknown";
-                    if (pMatch[0].includes('={')) {
-                        typeGuess = isCallback ? "function" : "expression";
-                    } else if (pMatch[0].includes('="') || pMatch[0].includes("='")) {
-                        typeGuess = "string";
-                    } else if (!pMatch[0].includes('=')) {
-                        typeGuess = "boolean";
-                    }
-                    
-                    propsPassed.push({
-                        name: propName,
-                        type: typeGuess,
-                        is_callback: isCallback
-                    });
-                }
-            });
-        });
-
-        // Deduplicate props passed to the same child
-        const uniqueProps = [];
-        const seenProps = new Set();
-        propsPassed.forEach(p => {
-            if (!seenProps.has(p.name)) {
-                seenProps.add(p.name);
-                uniqueProps.push(p);
+                if (!propName || ['key', 'ref'].includes(propName) || seen.has(propName)) continue;
+                seen.add(propName);
+                const isCallback = /^on[A-Z]/.test(propName);
+                let type = 'unknown';
+                if (pMatch[0].includes('={')) type = isCallback ? 'function' : 'expression';
+                else if (pMatch[0].includes('="') || pMatch[0].includes("='")) type = 'string';
+                else if (!pMatch[0].includes('=')) type = 'boolean';
+                propsPassed.push({ name: propName, type, is_callback: isCallback });
             }
-        });
+        }
 
-        relations.push({
-            parent_name: componentName,
-            child_name: childName,
-            props_passed: uniqueProps
-        });
+        return { parent_name: componentName, child_name: childName, props_passed: propsPassed };
     });
 
     return {
-        component: {
-            name: componentName,
-            file_path: relativePath,
-            is_exported: isExported,
-            hooks: hooks,
-            state_variables: stateVariables
-        },
-        relations: relations
+        component: { name: componentName, file_path: relativePath, is_exported: isExported, hooks, state_variables: stateVariables },
+        relations,
     };
 }
 
-// Scan workspace directory and upload results to backend using DRY api client
-async function scanAndUpload(targetDir, projectName, backendUrl = 'https://react-arch-analyzer-backend.onrender.com') {
+/**
+ * Scan a workspace directory and upload the analysis to the backend.
+ * @param {string} targetDir - Absolute path to the project root
+ * @param {string} projectName - Human-readable project name
+ * @param {string} token - JWT Bearer token from SecretStorage
+ * @param {string} [backendUrl] - Backend base URL
+ */
+async function scanAndUpload(targetDir, projectName, token, backendUrl = 'https://react-arch-analyzer-backend.onrender.com') {
     const absoluteTargetDir = path.resolve(targetDir);
-    console.log(`Starting scan of ${absoluteTargetDir}...`);
+    if (!fs.existsSync(absoluteTargetDir)) throw new Error(`Directory not found: ${absoluteTargetDir}`);
 
-    if (!fs.existsSync(absoluteTargetDir)) {
-        throw new Error(`Directory ${absoluteTargetDir} does not exist.`);
-    }
-
-    const files = getFiles(absoluteTargetDir);
     const components = [];
     const relations = [];
 
-    files.forEach(file => {
+    for (const file of getFiles(absoluteTargetDir)) {
         try {
             const result = parseFile(file, absoluteTargetDir);
             if (result) {
@@ -154,29 +105,18 @@ async function scanAndUpload(targetDir, projectName, backendUrl = 'https://react
                 relations.push(...result.relations);
             }
         } catch (err) {
-            console.error(`Error parsing file ${file}:`, err.message);
+            console.error(`Error parsing ${file}:`, err.message);
         }
-    });
+    }
 
-    console.log(`Scan completed. Found ${components.length} components and ${relations.length} relations.`);
+    console.log(`Scan done. ${components.length} components, ${relations.length} relations.`);
 
-    const username = getUsername();
-
-    const payload = {
-        project_name: projectName,
-        root_path: absoluteTargetDir,
-        git_commit: null,
-        components: components,
-        relations: relations,
-        username: username
-    };
-
-    console.log(`Uploading to backend at ${backendUrl}/api/analysis/...`);
-    const cleanBackendUrl = backendUrl.replace(/\/$/, '');
-    const data = await request(`${cleanBackendUrl}/api/analysis/`, {
+    const data = await request(`${backendUrl.replace(/\/$/, '')}/api/analysis/`, {
         method: 'POST',
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ project_name: projectName, root_path: absoluteTargetDir, git_commit: null, components, relations }),
+        token,
     });
+
     console.log(`Upload successful! Run ID: ${data.run_id}`);
     return data;
 }

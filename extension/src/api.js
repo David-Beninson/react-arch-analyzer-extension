@@ -1,52 +1,52 @@
 const http = require('http');
 const https = require('https');
-const os = require('os');
 
 /**
- * DRY HTTP/HTTPS Request Helper
- * @param {string} urlStr - The target URL
- * @param {object} options - Options containing method, headers, and body
- * @returns {Promise<any>} Response data parsed as JSON if possible, otherwise raw string
+ * DRY HTTP/HTTPS request helper.
+ * @param {string} urlStr - Target URL
+ * @param {object} options - { method, headers, body, token }
+ * @param {string} [options.token] - Optional Bearer JWT to attach
+ * @returns {Promise<any>} Parsed JSON or raw string
  */
 function request(urlStr, options = {}) {
     return new Promise((resolve, reject) => {
         try {
             const url = new URL(urlStr);
             const client = url.protocol === 'https:' ? https : http;
-            
+
+            const headers = { ...(options.headers || {}) };
+
+            if (options.token) {
+                headers['Authorization'] = `Bearer ${options.token}`;
+            }
+
+            if (options.body) {
+                headers['Content-Type'] = 'application/json';
+                headers['Content-Length'] = Buffer.byteLength(options.body);
+            }
+
             const reqOptions = {
                 hostname: url.hostname,
                 port: url.port || (url.protocol === 'https:' ? 443 : 80),
                 path: url.pathname + url.search,
                 method: options.method || 'GET',
-                headers: options.headers || {}
+                headers,
             };
-
-            if (options.body) {
-                reqOptions.headers['Content-Type'] = 'application/json';
-                reqOptions.headers['Content-Length'] = Buffer.byteLength(options.body);
-            }
 
             const req = client.request(reqOptions, (res) => {
                 let data = '';
                 res.on('data', (chunk) => data += chunk);
                 res.on('end', () => {
                     if (res.statusCode >= 200 && res.statusCode < 300) {
-                        try {
-                            resolve(JSON.parse(data));
-                        } catch (err) {
-                            resolve(data);
-                        }
+                        try { resolve(JSON.parse(data)); } catch { resolve(data); }
                     } else {
-                        reject(new Error(`HTTP Error ${res.statusCode}: ${data}`));
+                        reject(new Error(`HTTP ${res.statusCode}: ${data}`));
                     }
                 });
             });
 
             req.on('error', reject);
-            if (options.body) {
-                req.write(options.body);
-            }
+            if (options.body) req.write(options.body);
             req.end();
         } catch (err) {
             reject(err);
@@ -54,16 +54,4 @@ function request(urlStr, options = {}) {
     });
 }
 
-/**
- * Get the current operating system username
- * @returns {string} The local OS username
- */
-function getUsername() {
-    try {
-        return os.userInfo().username;
-    } catch (e) {
-        return process.env.USER || process.env.USERNAME || 'unknown';
-    }
-}
-
-module.exports = { request, getUsername };
+module.exports = { request };

@@ -1,0 +1,108 @@
+/* Shown when the user opens the frontend without going through the VS Code extension */
+
+.not-auth {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%);
+    padding: 1.5rem;
+}
+
+.not-auth-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2.5rem 2.25rem;
+    max-width: 520px;
+    width: 100%;
+    box-shadow: 0 8px 32px rgba(79, 70, 229, 0.08);
+}
+
+.not-auth-icon {
+    font-size: 2.75rem;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.not-auth-title {
+    font-size: 1.5rem;
+    text-align: center;
+    margin-bottom: 0.6rem;
+    color: var(--text-heading);
+}
+
+.not-auth-body {
+    color: var(--text-muted);
+    font-size: 0.92rem;
+    text-align: center;
+    line-height: 1.6;
+    margin-bottom: 1.75rem;
+    margin-top: 0;
+}
+
+.not-auth-section {
+    margin-bottom: 0.25rem;
+}
+
+.not-auth-section-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin-bottom: 0.6rem;
+    margin-top: 0;
+}
+
+.not-auth-steps {
+    color: var(--text-color);
+    font-size: 0.875rem;
+    line-height: 2;
+    padding-left: 1.25rem;
+    margin: 0;
+}
+
+.not-auth-steps code {
+    background: #ede9fe;
+    color: var(--primary-color);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+}
+
+.not-auth-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 1.25rem 0;
+}
+
+/* Keyboard key style */
+kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    font-size: 0.78rem;
+    font-family: var(--font-mono);
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    color: var(--text-heading);
+    line-height: 1.6;
+}
+
+.not-auth-tip {
+    margin-top: 1.5rem;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    font-size: 0.85rem;
+    color: #166534;
+}
+
+.not-auth-tip code {
+    background: #dcfce7;
+    color: #15803d;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}

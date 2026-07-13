@@ -3,7 +3,7 @@
   "displayName": "React Architecture Analyzer",
   "publisher": "beninsondavid",
   "description": "Analyzes React component structure and props flow",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.75.0"
@@ -14,7 +14,10 @@
   "activationEvents": [
     "onView:react-arch-analyzer-view",
     "onCommand:react-arch-analyzer.scanWorkspace",
-    "onCommand:react-arch-analyzer.openGraph"
+    "onCommand:react-arch-analyzer.openGraph",
+    "onCommand:react-arch-analyzer.login",
+    "onCommand:react-arch-analyzer.register",
+    "onCommand:react-arch-analyzer.logout"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -37,6 +40,18 @@
       ]
     },
     "commands": [
+      {
+        "command": "react-arch-analyzer.login",
+        "title": "React Arch: Login"
+      },
+      {
+        "command": "react-arch-analyzer.register",
+        "title": "React Arch: Register"
+      },
+      {
+        "command": "react-arch-analyzer.logout",
+        "title": "React Arch: Logout"
+      },
       {
         "command": "react-arch-analyzer.scanWorkspace",
         "title": "React Arch: Scan Workspace and Upload"

@@ -1,19 +1,22 @@
 const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
-const { request, getUsername } = require('./api');
+const { request } = require('./api');
+
+const TOKEN_SECRET_KEY = 'react-arch-analyzer.token';
 
 class ReactArchSidebarProvider {
-    constructor(extensionUri) {
+    constructor(extensionUri, secretStorage) {
         this._extensionUri = extensionUri;
+        this._secrets = secretStorage;
     }
 
-    resolveWebviewView(webviewView, context, token) {
+    resolveWebviewView(webviewView) {
         this._view = webviewView;
 
         webviewView.webview.options = {
             enableScripts: true,
-            localResourceRoots: [this._extensionUri]
+            localResourceRoots: [this._extensionUri],
         };
 
         webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
@@ -34,7 +37,7 @@ class ReactArchSidebarProvider {
             }
         });
 
-        // Load project history on start
+        // Load project history on sidebar open
         this.refreshHistory();
     }
 
@@ -43,10 +46,14 @@ class ReactArchSidebarProvider {
         try {
             const config = vscode.workspace.getConfiguration('react-arch-analyzer');
             const backendUrl = (config.get('backendUrl') || 'https://react-arch-analyzer-backend.onrender.com').replace(/\/$/, '');
-            
-            const username = getUsername();
 
-            const runs = await request(`${backendUrl}/api/analysis/?username=${encodeURIComponent(username)}`);
+            const token = await this._secrets.get(TOKEN_SECRET_KEY);
+            if (!token) {
+                this._view.webview.postMessage({ type: 'error', value: 'Not logged in. Use "Login" command.' });
+                return;
+            }
+
+            const runs = await request(`${backendUrl}/api/analysis/`, { token });
             this._view.webview.postMessage({ type: 'history', value: runs });
         } catch (err) {
             this._view.webview.postMessage({ type: 'error', value: 'Backend not running or unreachable' });
@@ -58,15 +65,10 @@ class ReactArchSidebarProvider {
         const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'sidebar.css'));
         const jsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'sidebar.js'));
 
-        let html = fs.readFileSync(htmlPath, 'utf8');
-        
-        // Clean dynamic replacement of URIs inside the loaded HTML template
-        html = html
+        return fs.readFileSync(htmlPath, 'utf8')
             .replace('${cssUri}', cssUri.toString())
             .replace('${jsUri}', jsUri.toString());
-
-        return html;
     }
 }
 
-module.exports = ReactArchSidebarProvider;
+module.exports = { ReactArchSidebarProvider, TOKEN_SECRET_KEY };

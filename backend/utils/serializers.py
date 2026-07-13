@@ -1,12 +1,20 @@
+def _get_ref_id(link) -> str | None:
+    """Safely extract the string ID from a Beanie Link or plain document."""
+    if not link:
+        return None
+    if hasattr(link, "ref"):
+        return str(link.ref.id)
+    if hasattr(link, "id"):
+        return str(link.id)
+    return None
+
+
 def _get_run_id(doc) -> str | None:
+    """Return the string run ID stored on a component/relation document."""
     if not doc or not hasattr(doc, "run") or not doc.run:
         return None
-    run = doc.run
-    if hasattr(run, "id") and run.id:
-        return str(run.id)
-    if hasattr(run, "ref") and hasattr(run.ref, "id"):
-        return str(run.ref.id)
-    return str(run)
+    return _get_ref_id(doc.run) or str(doc.run)
+
 
 def serialize_run(run) -> dict:
     if not run:
@@ -16,8 +24,9 @@ def serialize_run(run) -> dict:
         "project_name": run.project_name,
         "root_path": run.root_path,
         "git_commit": run.git_commit,
-        "username": getattr(run, "username", None),
-        "created_at": run.created_at.isoformat() if hasattr(run, "created_at") and run.created_at else None
+        # owner is exposed only as an ID — never leak credentials
+        "owner_id": _get_ref_id(run.owner),
+        "created_at": run.created_at.isoformat() if getattr(run, "created_at", None) else None,
     }
 
 def serialize_component(comp) -> dict:
