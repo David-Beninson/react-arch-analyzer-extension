@@ -288,7 +288,6 @@
     top: 100%;
     left: 0;
     width: 100%;
-    /* שינוי ל-100% כדי שיתפוס את כל רוחב הקארד במקום חישוב calc קשיח */
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 6px;
@@ -319,7 +318,6 @@
 }
 
 
-/* אנימציית זרימה לאורך הקו של ה-Prop Drilling */
 .edge-drilling-animation {
     animation: dash 1.5s linear infinite;
     pointer-events: none;
@@ -331,7 +329,6 @@
     }
 }
 
-/* התגית הצפה שמציגה אזהרה מעל הקשר המוכתם */
 .edge-drilled-badge {
     position: absolute;
     background: #fee2e2;
@@ -346,4 +343,24 @@
     cursor: help;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     z-index: 10;
+}
+
+/* Context sections */
+.contextProvidedSection,
+.contextConsumedSection {
+    border-top: 1px dashed var(--border-color);
+    padding-top: 5px;
+    margin-top: 2px;
+}
+
+.nodePropTag.contextProvided {
+    background: #ecfeff;
+    border: 1px solid #c5f2f7;
+    color: #0891b2;
+}
+
+.nodePropTag.contextConsumed {
+    background: #f0fdf4;
+    border: 1px solid #dcfce7;
+    color: #16a34a;
 }

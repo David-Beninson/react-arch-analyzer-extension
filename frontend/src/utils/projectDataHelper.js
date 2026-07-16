@@ -25,7 +25,7 @@ export async function processProjectData(projectName, signal) {
     if (data.components) {
         data.components.forEach(c => {
             nameToPath[c.name] = c.file_path;
-            allComponentsList.push(c.file_path);
+            allComponentsList.push(c);
         });
     }
     

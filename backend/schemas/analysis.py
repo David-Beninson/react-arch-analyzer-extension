@@ -13,6 +13,9 @@ class ComponentInput(BaseModel):
     is_exported: bool = False
     hooks: List[str] = Field(default_factory=list)
     state_variables: List[str] = Field(default_factory=list)
+    contexts_defined: List[str] = Field(default_factory=list)
+    contexts_provided: List[str] = Field(default_factory=list)
+    contexts_consumed: List[str] = Field(default_factory=list)
 
 class RelationInput(BaseModel):
     parent_name: str

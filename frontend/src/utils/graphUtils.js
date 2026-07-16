@@ -74,6 +74,11 @@ export const prepareGraphData = (treeDiagram, drillingInfo = null) => {
                     manualProps: nodeDrill.manual,
                     drilledProps: nodeDrill.drilled,
                     stateSourceProps: nodeDrill.stateSource,
+                    contexts_defined: component.contexts_defined || [],
+                    contexts_provided: component.contexts_provided || [],
+                    contexts_consumed: component.contexts_consumed || [],
+                    hooks: component.hooks || [],
+                    state_variables: component.state_variables || [],
                 },
                 type: 'custom',
             });

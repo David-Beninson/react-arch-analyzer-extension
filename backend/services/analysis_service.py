@@ -25,6 +25,9 @@ class AnalysisService:
                     run=run, name=c.name, file_path=c.file_path,
                     is_exported=c.is_exported, hooks=c.hooks,
                     state_variables=c.state_variables,
+                    contexts_defined=c.contexts_defined,
+                    contexts_provided=c.contexts_provided,
+                    contexts_consumed=c.contexts_consumed,
                 ) for c in payload.components
             ])
 

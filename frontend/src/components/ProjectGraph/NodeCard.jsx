@@ -12,7 +12,15 @@ export default function NodeCard({ id, data }) {
     const [inputColor, setInputColor] = useState('#ede9fe');
     const [showSuggestions, setShowSuggestions] = useState(false);
 
-    const { sourceCount: srcCount = 0, targetCount: tgtCount = 0, manualProps = [], drilledProps = [], stateSourceProps = [] } = data;
+    const {
+        sourceCount: srcCount = 0,
+        targetCount: tgtCount = 0,
+        manualProps = [],
+        drilledProps = [],
+        stateSourceProps = [],
+        contexts_provided = [],
+        contexts_consumed = []
+    } = data;
 
     const displayManualProps = manualProps.filter(p => !stateSourceProps.includes(p) && !drilledProps.includes(p));
     const isStateSource = stateSourceProps.length > 0;
@@ -92,6 +100,25 @@ export default function NodeCard({ id, data }) {
                         <span key={prop} className="nodePropTag stateSource" title="State for this prop should be defined here" style={{ backgroundColor: propColors[prop] || '#faf5ff' }}>
                             ✨ {prop}
                             <Button className="nodePropRemove" onClick={() => dispatchRemove(id, prop)} text="×" />
+                        </span>
+                    ))}
+                </div>
+            )}
+            {contexts_provided.length > 0 && (
+                <div className="nodeProps contextProvidedSection">
+                    {contexts_provided.map(ctx => (
+                        <span key={ctx} className="nodePropTag contextProvided" title="Provides this Context">
+                            📥 {ctx}
+                        </span>
+                    ))}
+                </div>
+            )}
+
+            {contexts_consumed.length > 0 && (
+                <div className="nodeProps contextConsumedSection">
+                    {contexts_consumed.map(ctx => (
+                        <span key={ctx} className="nodePropTag contextConsumed" title="Consumes this Context">
+                            🔌 {ctx}
                         </span>
                     ))}
                 </div>

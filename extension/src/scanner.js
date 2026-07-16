@@ -19,8 +19,46 @@ function getFiles(dir, filesList = []) {
     return filesList;
 }
 
+// Helper to build a map of custom hook names to their corresponding React context
+function buildHookToContextMap(files) {
+    const hookToContext = {};
+    for (const file of files) {
+        try {
+            const content = fs.readFileSync(file, 'utf-8');
+            const useContextMatches = [...content.matchAll(/useContext\(\s*(\w+)\s*\)/g)].map(m => m[1]);
+            if (useContextMatches.length === 0) continue;
+
+            const hookMatches = [
+                ...content.matchAll(/export\s+(?:function\s+)?(use[A-Z]\w*)/g),
+                ...content.matchAll(/export\s+const\s+(use[A-Z]\w*)\s*=\s*/g)
+            ].map(m => m[1]);
+
+            const contextsInFile = [...new Set(useContextMatches)];
+            for (const hook of hookMatches) {
+                if (contextsInFile.length === 1) {
+                    hookToContext[hook] = contextsInFile[0];
+                } else {
+                    const hookIdx = content.indexOf(hook);
+                    if (hookIdx !== -1) {
+                        const searchArea = content.substring(hookIdx, hookIdx + 300);
+                        for (const ctx of contextsInFile) {
+                            if (searchArea.includes(ctx)) {
+                                hookToContext[hook] = ctx;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (err) {
+            console.error(`Error building hook map for ${file}:`, err.message);
+        }
+    }
+    return hookToContext;
+}
+
 // Extract component details, state initialization, and child props from source code
-function parseFile(filePath, projectRoot) {
+function parseFile(filePath, projectRoot, hookToContext = {}) {
     const content = fs.readFileSync(filePath, 'utf-8');
     const relativePath = path.relative(projectRoot, filePath);
     const fileName = path.basename(filePath, path.extname(filePath));
@@ -32,7 +70,7 @@ function parseFile(filePath, projectRoot) {
     let componentName = funcMatch?.[1] || arrowMatch?.[1];
     if (!componentName) {
         if (/^[A-Z]/.test(fileName)) componentName = fileName;
-        else if (content.includes('</') || content.includes('/>') || /\<[A-Z]/.test(content))
+        else if (content.includes('</') || content.includes('/>') || /\<[A-Z]/.test(content) || content.includes('createContext'))
             componentName = fileName.charAt(0).toUpperCase() + fileName.slice(1);
         else return null; // Not a React component file
     }
@@ -44,13 +82,34 @@ function parseFile(filePath, projectRoot) {
     const stateVariables = [...content.matchAll(/const\s+\[\s*(\w+)\s*,\s*\w+\s*\]\s*=\s*useState/g)]
         .map(m => m[1]);
 
-    // 4. Check if component is exported
+    // 4. Detect contexts
+    // 4a. Contexts defined in this file
+    const contextsDefined = [...new Set(
+        [...content.matchAll(/(?:export\s+)?(?:const|let|var)\s+(\w+)\s*=\s*(?:React\.)?createContext\s*\(/g)].map(m => m[1])
+    )];
+
+    // 4b. Contexts provided in this component
+    const contextsProvided = [...new Set(
+        [...content.matchAll(/<\s*(\w+)\.Provider\b/g)].map(m => m[1])
+    )];
+
+    // 4c. Contexts consumed in this component
+    const directConsumed = [...content.matchAll(/useContext\(\s*(\w+)\s*\)/g)].map(m => m[1]);
+    const consumedSet = new Set(directConsumed);
+    for (const hook of hooks) {
+        if (hookToContext && hookToContext[hook]) {
+            consumedSet.add(hookToContext[hook]);
+        }
+    }
+    const contextsConsumed = [...consumedSet];
+
+    // 5. Check if component is exported
     const isExported =
         content.includes('export default') ||
         content.includes(`export const ${componentName}`) ||
         content.includes(`export function ${componentName}`);
 
-    // 5. Detect child components and the props passed to each
+    // 6. Detect child components and the props passed to each
     const childComponents = [...new Set(
         [...content.matchAll(/<([A-Z]\w*)/g)].map(m => m[1])
     )].filter(n => n !== componentName);
@@ -78,7 +137,16 @@ function parseFile(filePath, projectRoot) {
     });
 
     return {
-        component: { name: componentName, file_path: relativePath, is_exported: isExported, hooks, state_variables: stateVariables },
+        component: {
+            name: componentName,
+            file_path: relativePath,
+            is_exported: isExported,
+            hooks,
+            state_variables: stateVariables,
+            contexts_defined: contextsDefined,
+            contexts_provided: contextsProvided,
+            contexts_consumed: contextsConsumed,
+        },
         relations,
     };
 }
@@ -94,12 +162,15 @@ async function scanAndUpload(targetDir, projectName, token, backendUrl = 'https:
     const absoluteTargetDir = path.resolve(targetDir);
     if (!fs.existsSync(absoluteTargetDir)) throw new Error(`Directory not found: ${absoluteTargetDir}`);
 
+    const files = getFiles(absoluteTargetDir);
+    const hookToContext = buildHookToContextMap(files);
+
     const components = [];
     const relations = [];
 
-    for (const file of getFiles(absoluteTargetDir)) {
+    for (const file of files) {
         try {
-            const result = parseFile(file, absoluteTargetDir);
+            const result = parseFile(file, absoluteTargetDir, hookToContext);
             if (result) {
                 components.push(result.component);
                 relations.push(...result.relations);

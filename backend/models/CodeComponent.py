@@ -10,6 +10,9 @@ class CodeComponent(Document):
     is_exported: bool = False
     hooks: List[str] = []
     state_variables: List[str] = []
+    contexts_defined: List[str] = []
+    contexts_provided: List[str] = []
+    contexts_consumed: List[str] = []
 
     class Settings:
         name = "code_components"

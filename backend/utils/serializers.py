@@ -39,7 +39,10 @@ def serialize_component(comp) -> dict:
         "file_path": comp.file_path,
         "is_exported": comp.is_exported,
         "hooks": comp.hooks,
-        "state_variables": comp.state_variables
+        "state_variables": comp.state_variables,
+        "contexts_defined": getattr(comp, "contexts_defined", []),
+        "contexts_provided": getattr(comp, "contexts_provided", []),
+        "contexts_consumed": getattr(comp, "contexts_consumed", []),
     }
 
 def serialize_relation(rel) -> dict:

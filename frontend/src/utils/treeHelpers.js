@@ -7,12 +7,17 @@ export const transformToHierarchy = (jsonObj, allComponents = []) => {
     const parentTracking = new Map();
     const hasParentSet = new Set();
 
-    const getOrCreateNode = (path) => {
+    const getOrCreateNode = (path, initialData = {}) => {
         if (!componentMap[path]) {
             componentMap[path] = {
                 id: path,
-                name: path.split('/').pop(),
-                children: []
+                name: initialData.name || path.split('/').pop(),
+                children: [],
+                contexts_defined: initialData.contexts_defined || [],
+                contexts_provided: initialData.contexts_provided || [],
+                contexts_consumed: initialData.contexts_consumed || [],
+                hooks: initialData.hooks || [],
+                state_variables: initialData.state_variables || [],
             };
             childrenTracking.set(path, new Set());
             parentTracking.set(path, new Set());
@@ -21,9 +26,11 @@ export const transformToHierarchy = (jsonObj, allComponents = []) => {
     };
 
     // Pre-populate componentMap with all project components to handle isolated components
-    allComponents.forEach(path => {
+    allComponents.forEach(comp => {
+        const isStr = typeof comp === 'string';
+        const path = isStr ? comp : comp.file_path;
         if (FILES_TO_KEEP_REGEX.test(path)) {
-            getOrCreateNode(path);
+            getOrCreateNode(path, isStr ? {} : comp);
         }
     });
 
