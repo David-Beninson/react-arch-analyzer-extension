@@ -151,14 +151,7 @@ function parseFile(filePath, projectRoot, hookToContext = {}) {
     };
 }
 
-/**
- * Scan a workspace directory and upload the analysis to the backend.
- * @param {string} targetDir - Absolute path to the project root
- * @param {string} projectName - Human-readable project name
- * @param {string} token - JWT Bearer token from SecretStorage
- * @param {string} [backendUrl] - Backend base URL
- */
-async function scanAndUpload(targetDir, projectName, token, backendUrl = 'https://react-arch-analyzer-backend.onrender.com') {
+function analyzeProject(targetDir) {
     const absoluteTargetDir = path.resolve(targetDir);
     if (!fs.existsSync(absoluteTargetDir)) throw new Error(`Directory not found: ${absoluteTargetDir}`);
 
@@ -180,6 +173,14 @@ async function scanAndUpload(targetDir, projectName, token, backendUrl = 'https:
         }
     }
 
+    return { absoluteTargetDir, components, relations };
+}
+
+/**
+ * Scan a workspace directory and upload the analysis to the backend.
+ */
+async function scanAndUpload(targetDir, projectName, token, backendUrl = 'https://react-arch-analyzer-backend.onrender.com') {
+    const { absoluteTargetDir, components, relations } = analyzeProject(targetDir);
     console.log(`Scan done. ${components.length} components, ${relations.length} relations.`);
 
     const data = await request(`${backendUrl.replace(/\/$/, '')}/api/analysis/`, {
@@ -192,4 +193,14 @@ async function scanAndUpload(targetDir, projectName, token, backendUrl = 'https:
     return data;
 }
 
-module.exports = { scanAndUpload };
+async function scanLocal(targetDir, projectName) {
+    const { components, relations } = analyzeProject(targetDir);
+    console.log(`Local scan done. ${components.length} components, ${relations.length} relations.`);
+    return {
+        project_name: projectName,
+        components,
+        relations,
+    };
+}
+
+module.exports = { scanAndUpload, scanLocal };

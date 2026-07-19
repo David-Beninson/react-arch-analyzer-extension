@@ -1,6 +1,6 @@
 const vscode = require('vscode');
 const { ReactArchSidebarProvider, TOKEN_SECRET_KEY } = require('./src/sidebarProvider');
-const { scanAndUpload } = require('./src/scanner');
+const { scanAndUpload, scanLocal } = require('./src/scanner');
 const { request } = require('./src/api');
 
 function getBackendUrl() {
@@ -47,6 +47,21 @@ async function handleGitHubSignIn(context) {
     }
 }
 
+let activeGraphPanel = undefined;
+let pendingLocalData = null;
+
+function getWorkspaceInfo() {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders) {
+        vscode.window.showErrorMessage('No workspace open to scan.');
+        return null;
+    }
+    return {
+        rootPath: workspaceFolders[0].uri.fsPath,
+        projectName: vscode.workspace.name || 'Unnamed Project'
+    };
+}
+
 function activate(context) {
     console.log('React Architecture Analyzer extension is now active!');
 
@@ -79,14 +94,9 @@ function activate(context) {
             const freshToken = await context.secrets.get(TOKEN_SECRET_KEY);
             if (!freshToken) return;
 
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (!workspaceFolders) {
-                vscode.window.showErrorMessage('No workspace open to scan.');
-                return;
-            }
-
-            const rootPath = workspaceFolders[0].uri.fsPath;
-            const projectName = vscode.workspace.name || 'Unnamed Project';
+            const wsInfo = getWorkspaceInfo();
+            if (!wsInfo) return;
+            const { rootPath, projectName } = wsInfo;
 
             await vscode.window.withProgress(
                 {
@@ -101,6 +111,50 @@ function activate(context) {
                         vscode.window.showInformationMessage('Scan completed and uploaded!');
                     } catch (err) {
                         vscode.window.showErrorMessage(`Scan failed: ${err.message}`);
+                    }
+                }
+            );
+        }
+    );
+
+    // 3b. Scan workspace locally — local-first analysis without any server uploads/logins
+    const scanLocalDisposable = vscode.commands.registerCommand(
+        'react-arch-analyzer.scanLocal',
+        async () => {
+            const wsInfo = getWorkspaceInfo();
+            if (!wsInfo) return;
+            const { rootPath, projectName } = wsInfo;
+
+            await vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: 'React Architecture Analyzer (Local Scan)',
+                    cancellable: false,
+                },
+                async (progress) => {
+                    progress.report({ message: 'Analyzing local files...' });
+                    try {
+                        const localData = await scanLocal(rootPath, projectName);
+                        
+                        pendingLocalData = {
+                            projectName,
+                            components: localData.components,
+                            relations: localData.relations
+                        };
+
+                        if (!activeGraphPanel) {
+                            await vscode.commands.executeCommand('react-arch-analyzer.openGraph', 'local');
+                        } else {
+                            activeGraphPanel.webview.postMessage({
+                                type: 'LOAD_LOCAL_DATA',
+                                value: pendingLocalData
+                            });
+                            pendingLocalData = null; // consume it
+                        }
+
+                        vscode.window.showInformationMessage('Local analysis completed!');
+                    } catch (err) {
+                        vscode.window.showErrorMessage(`Local scan failed: ${err.message}`);
                     }
                 }
             );
@@ -129,12 +183,43 @@ function activate(context) {
                 }
             }
 
+            if (activeGraphPanel) {
+                activeGraphPanel.reveal(vscode.ViewColumn.One);
+                if (projectId === 'local' && pendingLocalData) {
+                    activeGraphPanel.webview.postMessage({
+                        type: 'LOAD_LOCAL_DATA',
+                        value: pendingLocalData
+                    });
+                    pendingLocalData = null;
+                }
+                return;
+            }
+
             const panel = vscode.window.createWebviewPanel(
                 'reactArchGraph',
                 panelTitle,
                 vscode.ViewColumn.One,
                 { enableScripts: true, retainContextWhenHidden: true }
             );
+
+            activeGraphPanel = panel;
+
+            panel.onDidDispose(() => {
+                activeGraphPanel = undefined;
+            });
+
+            // Listen for messages from webview (like iframeReady)
+            panel.webview.onDidReceiveMessage(async (message) => {
+                if (message.type === 'iframeReady') {
+                    if (pendingLocalData) {
+                        panel.webview.postMessage({
+                            type: 'LOAD_LOCAL_DATA',
+                            value: pendingLocalData
+                        });
+                        pendingLocalData = null;
+                    }
+                }
+            });
 
             const token = await context.secrets.get(TOKEN_SECRET_KEY);
             const basePath = projectId ? `/dashboard/${encodeURIComponent(projectId)}` : '/';
@@ -154,7 +239,32 @@ function activate(context) {
                     <title>React Architecture Graph</title>
                     <style>html, body, iframe { margin: 0; padding: 0; width: 100%; height: 100%; border: none; background: transparent; }</style>
                 </head>
-                <body><iframe src="${targetUrl}"></iframe></body>
+                <body>
+                    <iframe src="${targetUrl}"></iframe>
+                    <script>
+                        const vscode = acquireVsCodeApi();
+                        const iframe = document.querySelector('iframe');
+                        
+                        // 1. Forward messages from VS Code Extension to iframe
+                        window.addEventListener('message', (event) => {
+                            if (event.data) {
+                                iframe.contentWindow.postMessage(event.data, '*');
+                            }
+                        });
+
+                        // 2. Forward messages from iframe to VS Code Extension
+                        window.addEventListener('message', (event) => {
+                            if (event.source === iframe.contentWindow) {
+                                vscode.postMessage(event.data);
+                            }
+                        });
+
+                        // 3. Inform VS Code when iframe loads
+                        iframe.onload = () => {
+                            vscode.postMessage({ type: 'iframeReady' });
+                        };
+                    </script>
+                </body>
                 </html>
             `;
         }
@@ -171,6 +281,7 @@ function activate(context) {
         signInDisposable,
         logoutDisposable,
         scanDisposable,
+        scanLocalDisposable,
         openGraphDisposable,
         sidebarDisposable
     );

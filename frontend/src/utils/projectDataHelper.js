@@ -49,3 +49,40 @@ export async function processProjectData(projectName, signal) {
 
     return { formatTree, flatPropsList };
 };
+
+export function processLocalData(data) {
+    const flatPropsList = [];
+    const nameToPath = {};
+    const allComponentsList = [];
+    
+    if (data.components) {
+        data.components.forEach(c => {
+            nameToPath[c.name] = c.file_path;
+            allComponentsList.push(c);
+        });
+    }
+    
+    const legacyTree = {};
+
+    if (data.relations) {
+        data.relations.forEach(r => {
+            const parentPath = nameToPath[r.parent_name] || r.parent_name;
+            const childPath = nameToPath[r.child_name] || r.child_name;
+
+            if (!legacyTree[parentPath]) legacyTree[parentPath] = [];
+            if (!legacyTree[parentPath].includes(childPath)) {
+                legacyTree[parentPath].push(childPath);
+            }
+
+            if (r.props_passed) {
+                r.props_passed.forEach(p => {
+                    flatPropsList.push({ childPath, propName: p.name });
+                });
+            }
+        });
+    }
+
+    const formatTree = transformToHierarchy(legacyTree, allComponentsList);
+
+    return { formatTree, flatPropsList };
+}

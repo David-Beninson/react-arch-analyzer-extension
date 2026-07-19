@@ -16,7 +16,8 @@
     "onCommand:react-arch-analyzer.scanWorkspace",
     "onCommand:react-arch-analyzer.openGraph",
     "onCommand:react-arch-analyzer.signIn",
-    "onCommand:react-arch-analyzer.logout"
+    "onCommand:react-arch-analyzer.logout",
+    "onCommand:react-arch-analyzer.scanLocal"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -60,6 +61,10 @@
       {
         "command": "react-arch-analyzer.openGraph",
         "title": "React Arch: Open Architecture Graph"
+      },
+      {
+        "command": "react-arch-analyzer.scanLocal",
+        "title": "React Arch: Scan Workspace Locally (Offline)"
       }
     ],
     "configuration": {
